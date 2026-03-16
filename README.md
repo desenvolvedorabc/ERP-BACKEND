@@ -99,6 +99,58 @@ Consulte o arquivo [.env.example](.env.example) para a lista completa. As princi
 
 ## Docker
 
+A forma mais rapida de subir o projeto e com Docker Compose. Ele sobe o MySQL e o backend automaticamente.
+
+### Subir tudo com Docker Compose
+
+1. Configure o `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Edite o `.env` e ajuste `DB_HOST=db` (nome do servico MySQL no docker-compose).
+
+2. Suba os containers:
+
+```bash
+docker compose up -d
+```
+
+Isso cria:
+- **MySQL 8.0** na porta `3306` (usuario: `root`, senha: `root`, banco: `erp_financeiro`)
+- **Backend** na porta `3003`
+
+Os dados do MySQL ficam persistidos no volume `mysql_data`.
+
+3. Para parar:
+
+```bash
+docker compose down
+```
+
+### Subir apenas o banco de dados
+
+Se preferir rodar o backend localmente mas usar o MySQL via Docker:
+
+```bash
+docker compose up -d db
+```
+
+Configure no `.env`:
+
+```
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=root
+DB_NAME=erp_financeiro
+```
+
+Depois rode o backend normalmente com `yarn start:dev`.
+
+### Build manual (sem docker-compose)
+
 ```bash
 docker build -t erp-backend .
 docker run -p 3003:3003 --env-file .env erp-backend

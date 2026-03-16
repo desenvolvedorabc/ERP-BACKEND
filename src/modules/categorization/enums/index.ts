@@ -1,0 +1,6 @@
+export enum RelationType {
+  PAYABLE = "PAYABLE",
+  RECEIVABLE = "RECEIVABLE",
+  CARDMOV = "CARDMOV",
+  APPOINTMENT = "APPOINTMENT",
+}

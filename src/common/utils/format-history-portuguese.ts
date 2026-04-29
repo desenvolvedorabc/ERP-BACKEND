@@ -87,6 +87,24 @@ export function formatHistoryToPortuguese(
           parts.push(entry.newRole);
         }
         break;
+
+      case "inclusao":
+        if (entry.historico_depois) {
+          parts.push(entry.historico_depois);
+        } else {
+          parts.push("Colaborador incluído no sistema");
+        }
+        break;
+
+      case "programa":
+        if (entry.previousOccupationArea && entry.newOccupationArea) {
+          parts.push(
+            `Programa alterado de "${entry.previousOccupationArea}" para "${entry.newOccupationArea}"`,
+          );
+        } else if (entry.newOccupationArea) {
+          parts.push(`Programa definido como "${entry.newOccupationArea}"`);
+        }
+        break;
     }
 
     // Adicionar data se disponível

@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
-import * as XLSX from "xlsx";
 import { CollaboratorsRepository } from "../repositories/typeorm/collaborators-repository";
 import {
   OccupationArea,
@@ -14,6 +13,7 @@ import {
 import { CollaboratorHistoryRepository } from "../repositories/collaborator-history-repository";
 import { CollaboratorHistory } from "../entities/collaborator-history.entity";
 import { Collaborator } from "../entities/collaborator.entity";
+import { CollaboratorHistoryService } from "./collaborator-history.service";
 
 interface CollaboratorCsvRow {
   nome?: string;
@@ -79,6 +79,7 @@ export class ImportCollaboratorsService {
   constructor(
     private readonly collaboratorsRepository: CollaboratorsRepository,
     private readonly historyRepository: CollaboratorHistoryRepository,
+    private readonly historyService: CollaboratorHistoryService,
   ) {}
 
   async importCollaborators(file: Express.Multer.File): Promise<{
@@ -113,22 +114,14 @@ export class ImportCollaboratorsService {
     }
 
     try {
-      const csvString = file.buffer.toString("utf-8");
-      
-      const workbook = XLSX.read(csvString, {
-        type: "string",
-        cellDates: false, // Desabilita conversão automática de datas para preservar formato original
-        codepage: 65001,
-      });
+      let csvString = file.buffer.toString("utf-8");
 
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
+      // Remove BOM if present
+      if (csvString.charCodeAt(0) === 0xFEFF) {
+        csvString = csvString.substring(1);
+      }
 
-      const rows: CollaboratorCsvRow[] = XLSX.utils.sheet_to_json(worksheet, {
-        raw: false,
-        defval: null,
-        blankrows: false,
-      });
+      const rows: CollaboratorCsvRow[] = this.parseCsv(csvString);
 
       if (!rows || rows.length === 0) {
         throw new BadRequestException("Arquivo vazio ou sem dados.");
@@ -580,13 +573,76 @@ export class ImportCollaboratorsService {
     const collaborator = this.collaboratorsRepository.getRepository(Collaborator).create(collaboratorData);
     const savedCollaborator = await this.collaboratorsRepository.getRepository(Collaborator).save(collaborator);
 
-    await this.persistRemunerationAndHistory(
-      savedCollaborator.id,
-      data.remuneration,
-      data.historico,
-    );
+    await this.historyService.recordInitialSnapshot(savedCollaborator.id, data);
+
+    if (data.historico && data.historico.trim() !== "") {
+      await this.persistRemunerationAndHistory(savedCollaborator.id, null, data.historico);
+    }
   }
 
+
+  private parseCsv(csvString: string): CollaboratorCsvRow[] {
+    const lines = csvString.split(/\r?\n/).filter((line) => line.trim());
+    if (lines.length < 2) return [];
+
+    // Auto-detect delimiter: check if header has more semicolons or commas
+    const firstLine = lines[0];
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const delimiter = semicolonCount >= commaCount ? ";" : ",";
+
+    const headers = this.parseCsvLine(lines[0], delimiter).map((h) =>
+      h.trim().toLowerCase(),
+    );
+    const rows: CollaboratorCsvRow[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const values = this.parseCsvLine(lines[i], delimiter);
+      const row: Record<string, any> = {};
+      for (let j = 0; j < headers.length; j++) {
+        const val = values[j] !== undefined ? values[j].trim() : null;
+        row[headers[j]] = val === "" ? null : val;
+      }
+      rows.push(row as CollaboratorCsvRow);
+    }
+
+    return rows;
+  }
+
+  private parseCsvLine(line: string, delimiter: string): string[] {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (inQuotes) {
+        if (char === '"') {
+          if (i + 1 < line.length && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === delimiter) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+    }
+    result.push(current);
+
+    return result;
+  }
 
   private cleanCpf(cpf: string): string {
     if (!cpf) return "";

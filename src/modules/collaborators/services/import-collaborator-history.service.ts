@@ -20,6 +20,10 @@ interface HistoryRow {
   newActive?: boolean | string;
   previousDisableBy?: string;
   newDisableBy?: string;
+  previousOccupationArea?: string;
+  newOccupationArea?: string;
+  historico_antes?: string;
+  historico_depois?: string;
   createdAt?: string | Date;
 }
 
@@ -97,6 +101,8 @@ export class ImportCollaboratorHistoryService {
           const historyData: Partial<CollaboratorHistory> = {
             collaboratorId,
             changedField: String(row.changedField).trim(),
+            historico_antes: row.historico_antes ? String(row.historico_antes) : null,
+            historico_depois: row.historico_depois ? String(row.historico_depois) : null,
           };
 
           switch (row.changedField.toLowerCase()) {
@@ -105,6 +111,12 @@ export class ImportCollaboratorHistoryService {
                 ? String(row.previousRole)
                 : null;
               historyData.newRole = row.newRole ? String(row.newRole) : null;
+              if (!historyData.historico_antes && historyData.previousRole) {
+                historyData.historico_antes = historyData.previousRole;
+              }
+              if (!historyData.historico_depois && historyData.newRole) {
+                historyData.historico_depois = historyData.newRole;
+              }
               break;
 
             case "startofcontract":
@@ -116,6 +128,12 @@ export class ImportCollaboratorHistoryService {
               historyData.newStartOfContract = this.parseDate(
                 row.newStartOfContract,
               );
+              if (!historyData.historico_antes && historyData.previousStartOfContract) {
+                historyData.historico_antes = historyData.previousStartOfContract.toLocaleDateString('pt-BR');
+              }
+              if (!historyData.historico_depois && historyData.newStartOfContract) {
+                historyData.historico_depois = historyData.newStartOfContract.toLocaleDateString('pt-BR');
+              }
               break;
 
             case "remuneration":
@@ -124,6 +142,12 @@ export class ImportCollaboratorHistoryService {
                 row.previousRemuneration,
               );
               historyData.newRemuneration = this.parseNumber(row.newRemuneration);
+              if (!historyData.historico_antes && historyData.previousRemuneration !== null) {
+                historyData.historico_antes = String(historyData.previousRemuneration);
+              }
+              if (!historyData.historico_depois && historyData.newRemuneration !== null) {
+                historyData.historico_depois = String(historyData.newRemuneration);
+              }
               break;
 
             case "active":
@@ -134,6 +158,16 @@ export class ImportCollaboratorHistoryService {
                 row.previousDisableBy,
               );
               historyData.newDisableBy = this.parseDisableBy(row.newDisableBy);
+              if (!historyData.historico_antes) {
+                historyData.historico_antes = historyData.previousActive !== null
+                  ? (historyData.previousActive ? "Ativo" : "Inativo")
+                  : null;
+              }
+              if (!historyData.historico_depois) {
+                historyData.historico_depois = historyData.newActive !== null
+                  ? (historyData.newActive ? "Ativo" : "Inativo")
+                  : null;
+              }
               break;
 
             case "disableby":
@@ -144,11 +178,44 @@ export class ImportCollaboratorHistoryService {
                 row.previousDisableBy,
               );
               historyData.newDisableBy = this.parseDisableBy(row.newDisableBy);
+              if (!historyData.historico_antes && historyData.previousDisableBy) {
+                historyData.historico_antes = historyData.previousDisableBy;
+              }
+              if (!historyData.historico_depois && historyData.newDisableBy) {
+                historyData.historico_depois = historyData.newDisableBy;
+              }
+              break;
+
+            case "programa":
+              historyData.previousOccupationArea = row.previousOccupationArea
+                ? String(row.previousOccupationArea)
+                : null;
+              historyData.newOccupationArea = row.newOccupationArea
+                ? String(row.newOccupationArea)
+                : null;
+              if (!historyData.historico_antes && historyData.previousOccupationArea) {
+                historyData.historico_antes = historyData.previousOccupationArea;
+              }
+              if (!historyData.historico_depois && historyData.newOccupationArea) {
+                historyData.historico_depois = historyData.newOccupationArea;
+              }
+              break;
+
+            case "inclusao":
+              historyData.newRole = row.newRole ? String(row.newRole) : null;
+              historyData.newStartOfContract = this.parseDate(row.newStartOfContract);
+              historyData.newRemuneration = this.parseNumber(row.newRemuneration);
+              historyData.newOccupationArea = row.newOccupationArea
+                ? String(row.newOccupationArea)
+                : null;
+              if (!historyData.historico_depois) {
+                historyData.historico_depois = "Colaborador incluído no sistema";
+              }
               break;
 
             default:
               errors.push(
-                `Linha ${rowNumber}: Campo 'changedField' inválido: ${row.changedField}. Valores aceitos: role, startOfContract, remuneration, active, disableBy.`,
+                `Linha ${rowNumber}: Campo 'changedField' inválido: ${row.changedField}. Valores aceitos: role, startOfContract, remuneration, active, disableBy, PROGRAMA, INCLUSAO.`,
               );
               continue;
           }
@@ -268,4 +335,3 @@ export class ImportCollaboratorHistoryService {
     return null;
   }
 }
-

@@ -37,7 +37,24 @@ export class CollaboratorHistoryResponseDto {
   @ApiProperty({ description: "Novo motivo de desligamento", nullable: true })
   newDisableBy: string | null;
 
-  @ApiProperty({ description: "Campo que foi alterado" })
+  @ApiProperty({ description: "Campo que foi alterado. Valores: role, startOfContract, remuneration, active, disableBy, INCLUSAO, PROGRAMA" })
   changedField: string;
-}
 
+  @ApiProperty({ description: "Programa (Área de Atuação) anterior", nullable: true })
+  previousOccupationArea: string | null;
+
+  @ApiProperty({ description: "Novo Programa (Área de Atuação)", nullable: true })
+  newOccupationArea: string | null;
+
+  @ApiProperty({
+    description: "Valor anterior do campo alterado em texto legível (para BI/análise tabulada)",
+    nullable: true,
+  })
+  historico_antes: string | null;
+
+  @ApiProperty({
+    description: "Novo valor do campo alterado em texto legível (para BI/análise tabulada)",
+    nullable: true,
+  })
+  historico_depois: string | null;
+}

@@ -9,6 +9,7 @@ import { CollaboratorHistoryRepository } from "./repositories/collaborator-histo
 import { CollaboratorHistoryService } from "./services/collaborator-history.service";
 import { ImportCollaboratorHistoryService } from "./services/import-collaborator-history.service";
 import { ImportCollaboratorsService } from "./services/import-collaborators.service";
+import { MigrateOccupationAreaService } from "./services/migrate-occupation-area.service";
 import { UsersModule } from "../users/users.module";
 import { ApprovalValidationService } from "src/common/services/approval-validation.service";
 import { MulterModule } from "@nestjs/platform-express";
@@ -31,6 +32,7 @@ import { MulterModule } from "@nestjs/platform-express";
     CollaboratorHistoryService,
     ImportCollaboratorHistoryService,
     ImportCollaboratorsService,
+    MigrateOccupationAreaService,
     ApprovalValidationService,
   ],
   exports: [CollaboratorsService],

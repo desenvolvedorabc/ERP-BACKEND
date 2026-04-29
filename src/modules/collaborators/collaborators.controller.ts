@@ -29,11 +29,13 @@ import { ResponseCollaborator } from "./repositories/typeorm/collaborators-repos
 import { JwtOrBasicAuthGuard } from "src/common/guards/jwtOrBasicAuth.guard";
 import { ParseNumericIdPipe } from "src/common/pipes/ParseNumericIdPipe ";
 import { CollaboratorDataResponseDto } from "./dto/collaborator-data-response.dto";
+import { CollaboratorTimelineRowDto } from "./dto/collaborator-timeline-row.dto";
 import { ApiOperation, ApiResponse, ApiConsumes, ApiBody } from "@nestjs/swagger";
 import { IPaginationMeta, Pagination } from "nestjs-typeorm-paginate";
 import { ImportHistoryDTO } from "./dto/import-history.dto";
 import { ImportCollaboratorHistoryService } from "./services/import-collaborator-history.service";
 import { ImportCollaboratorsService } from "./services/import-collaborators.service";
+import { MigrateOccupationAreaService } from "./services/migrate-occupation-area.service";
 import { CollaboratorsExceptionFilter } from "./filters/collaborators-exception.filter";
 
 @Controller("collaborators")
@@ -43,6 +45,7 @@ export class CollaboratorsController {
     private readonly collaboratorsService: CollaboratorsService,
     private readonly importHistoryService: ImportCollaboratorHistoryService,
     private readonly importCollaboratorsService: ImportCollaboratorsService,
+    private readonly migrateOccupationAreaService: MigrateOccupationAreaService,
   ) {}
 
   @Post()
@@ -102,8 +105,9 @@ export class CollaboratorsController {
     const { csvData } = await this.collaboratorsService.findAllInCsv(params);
 
     const nameFile = `${Date.now()}-collaborators.csv`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename=${nameFile}`);
-    res.send(csvData);
+    res.send(Buffer.from(csvData, "utf-8"));
   }
 
   @Post("import")
@@ -222,6 +226,36 @@ export class CollaboratorsController {
     return this.collaboratorsService.findAllData(params);
   }
 
+  @Get("/timeline/csv")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Exportar histórico de colaboradores em CSV tabular por período",
+    description:
+      "Exporta o histórico de colaboradores em formato CSV tabular (linha do tempo), com uma linha por período por colaborador. Ideal para importação em ferramentas de BI como BigQuery.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "CSV com timeline de colaboradores exportado com sucesso",
+    type: [CollaboratorTimelineRowDto],
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Nenhum colaborador encontrado",
+  })
+  async generateTimelineCsv(
+    @Query() params: PaginateCollaboratorsParams,
+    @Res() res,
+  ) {
+    const { csvData } =
+      await this.collaboratorsService.findAllTimelineCsv(params);
+
+    const nameFile = `${Date.now()}-collaborators-timeline.csv`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=${nameFile}`);
+    res.send(Buffer.from(csvData, "utf-8"));
+  }
+
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -267,7 +301,7 @@ export class CollaboratorsController {
   @ApiOperation({
     summary: "Importar histórico de colaboradores via CSV/Excel",
     description:
-      "Permite importar dados históricos anteriores à implementação via arquivo CSV/Excel no padrão Going2, alimentando a base retroativamente.",
+      "Permite importar dados históricos anteriores à implementação via arquivo CSV/Excel no padrão estabelecido, alimentando a base retroativamente.",
   })
   @ApiBody({
     schema: {
@@ -310,5 +344,39 @@ export class CollaboratorsController {
       throw new Error("Arquivo é obrigatório.");
     }
     return this.importHistoryService.importHistory(file);
+  }
+
+  @Post("history/migrate-occupation-area")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Migrar Área de Atuação no histórico legado",
+    description:
+      "Popula retroativamente o campo 'newOccupationArea' (Programa/Área de Atuação) em todos os registros de histórico que não possuem essa informação. Usa o valor atual do colaborador como referência. Execute este endpoint uma única vez após a atualização do sistema para garantir que o BI possa calcular custos por programa desde o início do contrato.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Migração concluída",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean" },
+        updated: { type: "number", description: "Quantidade de registros atualizados" },
+        skipped: { type: "number", description: "Quantidade de registros ignorados (colaborador sem área de atuação)" },
+        message: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: "Não autorizado - Token JWT inválido ou ausente",
+  })
+  async migrateOccupationArea(): Promise<{
+    success: boolean;
+    updated: number;
+    skipped: number;
+    message: string;
+  }> {
+    return this.migrateOccupationAreaService.migrateOccupationArea();
   }
 }

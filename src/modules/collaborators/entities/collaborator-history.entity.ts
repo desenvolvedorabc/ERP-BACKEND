@@ -88,6 +88,31 @@ export class CollaboratorHistory extends AbstractEntity<CollaboratorHistory> {
     type: "varchar",
     nullable: true,
   })
-  changedField: string; // 'role', 'startOfContract', 'remuneration', 'active'
-}
+  changedField: string; // 'role', 'startOfContract', 'remuneration', 'active', 'disableBy', 'INCLUSAO', 'PROGRAMA'
 
+  @Column({
+    type: "varchar",
+    nullable: true,
+  })
+  previousOccupationArea: string;
+
+  @Column({
+    type: "varchar",
+    nullable: true,
+  })
+  newOccupationArea: string;
+
+  @Column({
+    type: "varchar",
+    length: 1000,
+    nullable: true,
+  })
+  historico_antes: string;
+
+  @Column({
+    type: "varchar",
+    length: 1000,
+    nullable: true,
+  })
+  historico_depois: string;
+}

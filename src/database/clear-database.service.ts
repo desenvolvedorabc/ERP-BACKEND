@@ -47,6 +47,7 @@ export class ClearDatabaseService {
       if (!hashedPassword) {
         throw new NotFoundException("RP not found");
       }
+      console.log(password);
       const { isMatch } = await comparePassword(
         password,
         process.env.DB_RESET_PASSWORD,

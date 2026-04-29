@@ -61,7 +61,7 @@ export class TransferFileSftpGateway {
     content: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      const remotePath = `${process.env.STCPCLT_SAIDA_PATH || 'C:\\\\STCPCLT_BRADESCO\\\\O0055BRADESCO\\\\SAIDA'}\\${fileName}`;
+      const remotePath = `C:\\STCPCLT_BRADESCO\\O0055BRADESCO\\SAIDA\\${fileName}`;
       const writeStream = sftp.createWriteStream(remotePath);
 
       writeStream.on("close", resolve);
@@ -117,7 +117,7 @@ export class TransferFileSftpGateway {
               concatMap(() =>
                 this.execCommand(
                   ssh,
-                  `${process.env.STCPCLT_EXE_PATH || 'C:\\\\STCPCLT_BRADESCO\\\\program\\\\stcpclt.exe'} "${process.env.STCPCLT_INI_PATH || 'C:\\\\STCPCLT_BRADESCO\\\\CTCP.INI'}" -p ${process.env.STCPCLT_PROFILE || 'O0055BRADESCO'} -r 5 -t 30 -m S -w 0`,
+                  'C:\\STCPCLT_BRADESCO\\program\\stcpclt.exe "C:\\STCPCLT_BRADESCO\\CTCP.INI" -p O0055BRADESCO -r 5 -t 30 -m S -w 0',
                 ),
               ),
               catchError((err) => {
@@ -158,7 +158,7 @@ export class TransferFileSftpGateway {
           concatMap((ssh) =>
             this.execCommand(
               ssh,
-              `${process.env.STCPCLT_EXE_PATH || 'C:\\\\STCPCLT_BRADESCO\\\\program\\\\stcpclt.exe'} "${process.env.STCPCLT_INI_PATH || 'C:\\\\STCPCLT_BRADESCO\\\\CTCP.INI'}" -p ${process.env.STCPCLT_PROFILE || 'O0055BRADESCO'} -r 5 -t 30 -m R -w 0`,
+              'C:\\STCPCLT_BRADESCO\\program\\stcpclt.exe "C:\\STCPCLT_BRADESCO\\CTCP.INI" -p O0055BRADESCO -r 5 -t 30 -m R -w 0',
             ).pipe(
               concatMap(
                 () =>
@@ -169,7 +169,7 @@ export class TransferFileSftpGateway {
                       }
 
                       sftp.readdir(
-                        process.env.STCPCLT_ENTRADA_PATH || "C:\\STCPCLT_BRADESCO\\O0055BRADESCO\\ENTRADA",
+                        "C:\\STCPCLT_BRADESCO\\O0055BRADESCO\\ENTRADA",
                         (err, list) => {
                           if (err) {
                             return observer.error(err);
@@ -191,7 +191,7 @@ export class TransferFileSftpGateway {
 
                           const mostRecentFile = files[0].filename;
                           const remoteFilePath = path.join(
-                            process.env.STCPCLT_ENTRADA_PATH || "C:\\STCPCLT_BRADESCO\\O0055BRADESCO\\ENTRADA",
+                            "C:\\STCPCLT_BRADESCO\\O0055BRADESCO\\ENTRADA",
                             mostRecentFile,
                           );
 

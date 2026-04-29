@@ -15,7 +15,7 @@ export class SeedingService {
   }
 
   private async seedSuppliers(): Promise<void> {
-    const defaultSupplierCnpj = process.env.DEFAULT_SUPPLIER_CNPJ || "00000000000000";
+    const defaultSupplierCnpj = "60746948000112"; // Replace with the CNPJ you want to ensure exists
 
     const existingSupplier = await this.supplierRepository.findOne({
       where: { cnpj: defaultSupplierCnpj },

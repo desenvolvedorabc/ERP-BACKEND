@@ -329,7 +329,7 @@ export const PDFHeaders = [
 ];
 
 export const CONFIG_ABC = {
-  empresa_num_insc: process.env.EMPRESA_NUM_INSC || '',
-  convenio: process.env.CONVENIO || '',
-  nome_banco: process.env.NOME_BANCO || 'BANCO BRADESCO S.A.',
+  empresa_num_insc: '30275386000105',
+  convenio: '491939',
+  nome_banco : 'BANCO BRADESCO S.A.'
 }

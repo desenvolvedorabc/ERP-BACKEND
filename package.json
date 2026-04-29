@@ -21,7 +21,8 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "mg:generate": "yarn typeorm migration:generate src/database/migrations/InitialMigration -d src/database/typeorm/ormconfig.ts",
     "mg:run": "yarn typeorm migration:run -d src/database/typeorm/ormconfig.ts",
-    "mg:revert": "yarn typeorm migration:revert -d src/database/typeorm/ormconfig.ts"
+    "mg:revert": "yarn typeorm migration:revert -d src/database/typeorm/ormconfig.ts",
+    "script:seed-collaborator-history": "ts-node -r tsconfig-paths/register src/scripts/seed-collaborator-initial-history.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

@@ -6,6 +6,7 @@ import {
   CollaboratorWithPendingApprovalsError,
 } from "src/common/errors";
 import { formatCollaboratorForCsv } from "src/common/mappers/csv/format-collaborators-for-csv";
+import { formatCollaboratorsTimeline } from "src/common/mappers/csv/format-collaborators-timeline";
 import { filterContracts } from "src/common/utils/filterContracts";
 import { generateCsv } from "src/common/utils/lib/generate-csv";
 import { sendEmailCompleteEmployeeRegistration } from "src/mails";
@@ -47,6 +48,8 @@ export class CollaboratorsService {
       const collaborator = await this.collaboratorsRepository._create(
         createCollaboratorDto,
       );
+
+      await this.historyService.recordInitialSnapshot(collaborator.id, collaborator);
 
       await sendEmailCompleteEmployeeRegistration(
         collaborator.id,
@@ -248,6 +251,7 @@ export class CollaboratorsService {
         startOfContract: collaborator.startOfContract,
         active: collaborator.active,
         disableBy: collaborator.disableBy,
+        occupationArea: collaborator.occupationArea,
       };
 
       await this.collaboratorsRepository._update(collaborator.id, dto);
@@ -258,6 +262,7 @@ export class CollaboratorsService {
         startOfContract: updatedCollaborator.startOfContract,
         active: updatedCollaborator.active,
         disableBy: updatedCollaborator.disableBy,
+        occupationArea: updatedCollaborator.occupationArea,
       };
 
       await this.historyService.recordHistory(
@@ -329,6 +334,34 @@ export class CollaboratorsService {
     return {
       data: dataWithHistory,
       meta: paginatedResult.meta,
+    };
+  }
+
+  async findAllTimelineCsv(params: PaginateCollaboratorsParams) {
+    const { items } = await this.collaboratorsRepository._findAll(params, true);
+
+    const itemsWithHistory = await Promise.all(
+      items.map(async (collaborator) => {
+        const history = await this.historyService.getHistoryByCollaboratorId(
+          collaborator.id,
+        );
+        return {
+          ...collaborator,
+          history,
+        };
+      }),
+    );
+
+    const timelineRows = formatCollaboratorsTimeline(itemsWithHistory);
+
+    if (!timelineRows.length) {
+      throw new NotFoundException("Nenhum colaborador encontrado.");
+    }
+
+    const { csvData } = generateCsv(timelineRows);
+
+    return {
+      csvData,
     };
   }
 
